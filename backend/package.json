@@ -1,0 +1,27 @@
+{
+  "name": "unified-medical-records-backend",
+  "version": "1.0.0",
+  "description": "Express REST API and demo hospital exchange gateway for Unified Medical Records Access Platform (College MVP)",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test tests/api.integration.test.js"
+  },
+  "keywords": [
+    "healthcare",
+    "medical-records",
+    "express",
+    "firebase",
+    "mvp"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "firebase-admin": "^13.0.2",
+    "helmet": "^8.0.0"
+  }
+}

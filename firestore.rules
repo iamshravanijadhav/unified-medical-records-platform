@@ -1,0 +1,60 @@
+rules_version = '2';
+
+// Cloud Firestore Security Rules for Unified Medical Records Access Platform (MVP)
+// Note: The Express backend uses Firebase Admin SDK with server-side authentication and role checks.
+// Direct client access from browsers is strictly restricted to prevent bypassing role controls.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/doctors/$(request.auth.uid)).data.role;
+    }
+
+    function isDoctor() {
+      return isSignedIn() && getUserRole() == 'doctor';
+    }
+
+    function isHospitalAdmin() {
+      return isSignedIn() && getUserRole() == 'hospital_admin';
+    }
+
+    // Doctors & Hospital Admins can read their own profile; server handles role changes
+    match /doctors/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId
+                    && request.resource.data.role in ['doctor', 'hospital_admin'];
+      allow update: if isSignedIn() && request.auth.uid == userId
+                    && request.resource.data.role == resource.data.role;
+      allow delete: if false;
+    }
+
+    // Registered hospitals can be read by authenticated users; modified only via Hospital Admin / Backend
+    match /hospitals/{hospitalId} {
+      allow read: if isSignedIn();
+      allow write: if isHospitalAdmin();
+    }
+
+    // Synthetic patient demographics are readable only by authenticated doctors via backend API
+    match /patients/{patientId} {
+      allow read: if isDoctor();
+      allow write: if false; // Managed via server-side seed/backend only
+    }
+
+    // Metadata index: strictly accessed through authenticated backend API only
+    match /medicalRecordsMetadata/{recordId} {
+      allow read, write: if false; // Enforced via authenticated doctor retrieval API
+    }
+
+    // Immutable access & audit logs: append-only via backend Admin SDK
+    match /accessLogs/{logId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+  }
+}
+
